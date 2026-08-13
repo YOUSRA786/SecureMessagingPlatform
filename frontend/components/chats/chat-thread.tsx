@@ -486,7 +486,7 @@ export function ChatThread({
                   const apiUrl =
                     process.env
                       .NEXT_PUBLIC_API_URL ??
-                    "https://securemessagingplatform.onrender.com/";
+                    "https://securemessagingplatform.onrender.com";
 
                   xhr.open(
                     "POST",
@@ -663,7 +663,7 @@ export function ChatThread({
                 const apiUrl =
                   process.env
                     .NEXT_PUBLIC_API_URL ??
-                  "https://securemessagingplatform.onrender.com/";
+                  "https://securemessagingplatform.onrender.com";
 
                 const response =
                   await fetch(

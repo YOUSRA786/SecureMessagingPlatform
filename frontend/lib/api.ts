@@ -60,7 +60,7 @@ export type Contact = {
   user: User;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://securemessagingplatform.onrender.com/";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://securemessagingplatform.onrender.com";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
