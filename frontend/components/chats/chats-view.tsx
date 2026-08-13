@@ -11,9 +11,11 @@ import {
   type Conversation,
   type Message,
 } from "@/lib/api";
+import { subscribe, sendEvent } from "@/lib/ws-client";
 import { NavRail, type NavTab } from "./nav-rail";
 import { ChatThread } from "./chat-thread";
 import { CallsView } from "./calls-view";
+
 import { SettingsView } from "@/components/settings/settings-view";
 import { NewChatModal } from "./new-chat-modal";
 
@@ -46,6 +48,7 @@ export function ChatsView() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Record<number, number[]>>({});
 
   // Fetch Conversations
   const loadConversations = useCallback(
@@ -77,6 +80,14 @@ export function ChatsView() {
       try {
         const res = await messagesApi.list(token, conversationId);
         setMessages(res.messages);
+        // Mark messages as read for this conversation: send WS read event and clear local unread_count
+        if (res.messages.length > 0) {
+          const last = res.messages[res.messages.length - 1];
+          try {
+            sendEvent({ type: "message.read", data: { conversation_id: conversationId, last_read_message_id: last.id } });
+          } catch (e) {}
+          setConversations((prev) => prev.map((c) => (c.id === conversationId ? { ...c, unread_count: 0 } : c)));
+        }
       } catch (err) {
         console.error("Failed to load messages:", err);
       } finally {
@@ -95,6 +106,120 @@ export function ChatsView() {
     return () => clearInterval(interval);
   }, [loadConversations]);
 
+  // WebSocket event subscription
+  useEffect(() => {
+    const unsub = subscribe((event) => {
+      const { type, data } = event || {};
+      if (!type) return;
+      // message created
+      if (type === "message.created") {
+        const msg: Message = data as Message;
+        // update conversation preview and ordering
+        setConversations((prev) => {
+          const existing = prev.find((c) => c.id === msg.conversation_id);
+          const updated = prev.filter((c) => c.id !== msg.conversation_id);
+          const isOwn = msg.sender.id === user?.id;
+          const inc = !isOwn && selectedId !== msg.conversation_id ? 1 : 0;
+          const conv = existing
+            ? ({ ...existing, last_message_preview: msg.content, latest_message_at: msg.created_at, unread_count: existing.unread_count + inc } as Conversation)
+            : ({
+                id: msg.conversation_id,
+                conversation_type: "direct" as const,
+                title: null,
+                created_by_id: msg.sender.id,
+                created_at: msg.created_at,
+                updated_at: msg.created_at,
+                latest_message_at: msg.created_at,
+                last_message_preview: msg.content,
+                unread_count: inc,
+                members: [],
+              } as Conversation);
+          return [conv, ...updated];
+        });
+
+        // if active conversation, append message to messages
+        if (selectedId === msg.conversation_id) {
+          setMessages((prev) => [...prev, msg]);
+          // send delivered ack
+          if (msg.sender.id !== user!.id) {
+            sendEvent({ type: "message.delivered", data: { message_id: msg.id } });
+          }
+        }
+      }
+
+      // status updates
+      if (type === "message.status_update") {
+        const d = data || {};
+        // single message status update
+        if (d.message_id) {
+          const mid = d.message_id as number;
+          const uid = d.user_id as number;
+          const status = d.status as string;
+          setMessages((prev) => prev.map((m) => (m.id === mid ? { ...m, statuses: m.statuses.map((s) => (s.user.id === uid ? { ...s, status: status as any, delivered_at: d.delivered_at ?? s.delivered_at } : s)) } : m)));
+        }
+        // bulk read updates
+        if (d.message_ids) {
+          const ids: number[] = d.message_ids;
+          const uid = d.user_id as number;
+          setMessages((prev) => prev.map((m) => (ids.includes(m.id) ? { ...m, statuses: m.statuses.map((s) => (s.user.id === uid ? { ...s, status: d.status as any, read_at: d.read_at ?? s.read_at } : s)) } : m)));
+        }
+      }
+
+      // typing
+      if (type === "typing.start" || type === "typing.stop") {
+        const convId = data?.conversation_id as number;
+        const uid = data?.user_id as number;
+        if (!convId || !uid) return;
+        setTypingUsers((prev) => {
+          const copy = { ...prev };
+          const arr = new Set(copy[convId] ?? []);
+          if (type === "typing.start") arr.add(uid);
+          else arr.delete(uid);
+          copy[convId] = Array.from(arr);
+          return copy;
+        });
+      }
+
+      // presence
+      if (type === "presence.update") {
+        const uid = data?.user_id as number;
+        const isOnline = !!data?.is_online;
+        setConversations((prev) => prev.map((c) => ({
+          ...c,
+          members: c.members.map((m) => (m.user.id === uid ? { ...m, user: { ...m.user, is_online: isOnline, last_seen_at: data?.last_seen_at ?? m.user.last_seen_at } } : m)),
+        })));
+      }
+
+      // group membership events
+      if (type === "group.member_added") {
+        const convId = data?.conversation_id as number;
+        const user = data?.user as any;
+        if (!convId || !user) return;
+        setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, members: [...c.members, { user, role: "member", joined_at: new Date().toISOString(), last_read_message_id: null } ] } : c)));
+      }
+
+      if (type === "group.member_removed") {
+        const convId = data?.conversation_id as number;
+        const uid = data?.user_id as number;
+        if (!convId || !uid) return;
+        setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, members: c.members.filter((m) => m.user.id !== uid) } : c)));
+        // If current user was removed, deselect
+        if (user && user.id === uid) {
+          setSelectedId((prev) => (prev === convId ? null : prev));
+        }
+      }
+
+      if (type === "group.member_role_updated") {
+        const convId = data?.conversation_id as number;
+        const uid = data?.user_id as number;
+        const role = data?.role as "member" | "admin";
+        if (!convId || !uid) return;
+        setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, members: c.members.map((m) => (m.user.id === uid ? { ...m, role } : m)) } : c)));
+      }
+    });
+    return () => unsub();
+  }, [selectedId, user]);
+
   // Messages Load & Polling on Selected Conversation change
   useEffect(() => {
     if (selectedId === null) return;
@@ -105,9 +230,9 @@ export function ChatsView() {
     return () => clearInterval(interval);
   }, [selectedId, loadMessages]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, contentType: string = "text") => {
     if (!token || selectedId === null) return;
-    const newMsg = await messagesApi.send(token, selectedId, content);
+    const newMsg = await messagesApi.send(token, selectedId, content, contentType);
     setMessages((prev) => [...prev, newMsg]);
     // Refresh conversation preview
     void loadConversations(false);
@@ -144,7 +269,69 @@ export function ChatsView() {
 
       {/* 2. Main Tab Router (Chats, Calls, Settings) */}
       {activeTab === "calls" && <CallsView />}
+      {activeTab === "stories" && (
+  <div className="stories-app">
+    <div className="stories-sidebar">
+      <div className="stories-sidebar-header">
+        <h2>Stories</h2>
 
+        <button className="stories-add-btn" title="Add story">
+          +
+        </button>
+      </div>
+
+      <div className="stories-search">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+
+        <input placeholder="Search" />
+      </div>
+
+      <div className="my-story">
+        <div className="story-avatar-large">
+          +
+        </div>
+
+        <div>
+          <strong>My Story</strong>
+          <span>Add a story</span>
+        </div>
+      </div>
+
+      <div className="no-stories">
+        <strong>No stories</strong>
+        <span>New updates will appear here.</span>
+      </div>
+    </div>
+
+    <div className="stories-main">
+      <div className="stories-coming-soon">
+        <div className="stories-coming-soon-icon">
+          ◇
+        </div>
+
+        <h2>Stories</h2>
+
+        <p>
+          Stories are coming soon.
+        </p>
+
+        <span>
+          You'll be able to share photos and videos with your contacts here.
+        </span>
+      </div>
+    </div>
+  </div>
+)}
       {activeTab === "settings" && <SettingsView user={user} />}
 
       {activeTab === "chats" && (
@@ -230,7 +417,6 @@ export function ChatsView() {
               </div>
             )}
           </div>
-
           {/* Active Chat Thread Pane */}
           {activeConversation ? (
             <ChatThread
@@ -239,6 +425,7 @@ export function ChatsView() {
               currentUser={user}
               onSendMessage={handleSendMessage}
               isLoadingMessages={isLoadingMessages}
+              typingUserIds={typingUsers[activeConversation.id] ?? []}
             />
           ) : (
             <div className="main-pane">

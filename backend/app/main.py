@@ -13,7 +13,9 @@ from app.routers.auth import router as auth_router
 from app.routers.contacts import router as contacts_router
 from app.routers.conversations import router as conversations_router
 from app.routers.messages import router as messages_router
+from app.routers.attachments import router as attachments_router
 from app.routers.users import router as users_router
+from app.routers.ws import router as ws_router
 
 
 settings = get_settings()
@@ -50,3 +52,12 @@ app.include_router(users_router)
 app.include_router(contacts_router)
 app.include_router(conversations_router)
 app.include_router(messages_router)
+app.include_router(attachments_router)
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+# Serve uploaded static files
+static_path = Path(__file__).resolve().parents[1] / "static"
+static_path.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+app.include_router(ws_router)

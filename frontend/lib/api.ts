@@ -103,6 +103,12 @@ export const conversationsApi = {
     request<Conversation>("/conversations/group", { method: "POST", body: JSON.stringify({ title, member_ids: memberIds }) }, token),
   listMembers: (token: string, conversationId: number) =>
     request<ConversationMember[]>(`/conversations/${conversationId}/members`, {}, token),
+  addMember: (token: string, conversationId: number, userId: number) =>
+    request<ConversationMember>(`/conversations/${conversationId}/members`, { method: "POST", body: JSON.stringify({ user_id: userId }) }, token),
+  removeMember: (token: string, conversationId: number, userId: number) =>
+    request<void>(`/conversations/${conversationId}/members/${userId}`, { method: "DELETE" }, token),
+  updateMemberRole: (token: string, conversationId: number, userId: number, role: "member" | "admin") =>
+    request<ConversationMember>(`/conversations/${conversationId}/members/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) }, token),
 };
 
 export const messagesApi = {
@@ -112,9 +118,10 @@ export const messagesApi = {
     return request<MessagePageResponse>(`/conversations/${conversationId}/messages?${params.toString()}`, {}, token);
   },
   send: (token: string, conversationId: number, content: string, contentType = "text") =>
+    // Ensure content is a JSON string when sending complex payloads (attachments)
     request<Message>(
       `/conversations/${conversationId}/messages`,
-      { method: "POST", body: JSON.stringify({ content, content_type: contentType }) },
+      { method: "POST", body: JSON.stringify({ content: typeof content === "string" ? content : JSON.stringify(content), content_type: contentType }) },
       token
     ),
 };

@@ -3,7 +3,7 @@ import { AuthProvider } from "@/context/auth-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Cipher — Private messaging",
+  title: "Secure-Messenger",
   description: "A privacy-focused messaging workspace.",
 };
 

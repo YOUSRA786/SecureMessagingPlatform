@@ -41,6 +41,14 @@ class ConversationMemberResponse(BaseModel):
     last_read_message_id: int | None
 
 
+class AddConversationMemberRequest(BaseModel):
+    user_id: int = Field(gt=0)
+
+
+class UpdateConversationMemberRoleRequest(BaseModel):
+    role: ConversationRole
+
+
 class ConversationResponse(BaseModel):
     id: int
     conversation_type: ConversationType

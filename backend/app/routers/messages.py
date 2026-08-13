@@ -96,7 +96,7 @@ def list_messages(
 
 
 @router.post("/{conversation_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-def send_message(
+async def send_message(
     conversation_id: int,
     payload: MessageCreateRequest,
     current_user: CurrentUser,
@@ -106,6 +106,8 @@ def send_message(
 
     membership = get_membership_or_404(database_session, current_user.id, conversation_id)
     now = utc_now()
+    import logging
+    logging.getLogger("app.routers.messages").debug("send_message called: conversation=%s sender=%s payload_content_type=%s", conversation_id, current_user.id, payload.content_type)
     message = Message(
         conversation_id=conversation_id,
         sender_id=current_user.id,
@@ -131,4 +133,37 @@ def send_message(
     # This drives conversation-list ordering even before WebSocket delivery is added.
     membership.conversation.updated_at = now
     database_session.commit()
-    return to_message_response(message_with_relations(database_session, message.id))
+    message_obj = message_with_relations(database_session, message.id)
+
+    # Broadcast the created message to conversation members (exclude sender)
+    try:
+        from app.websocket.manager import manager
+        import asyncio
+        import logging
+        # Collect member ids for the conversation
+        member_user_ids = {m.user_id for m in database_session.scalars(select(ConversationMember).where(ConversationMember.conversation_id == conversation_id)).all()}
+        from fastapi.encoders import jsonable_encoder
+        logger = logging.getLogger("app.routers.messages")
+        try:
+            # Convert ORM message object to the response model safely
+            message_payload = to_message_response(message_obj).model_dump()
+            payload_event = {"type": "message.created", "data": jsonable_encoder(message_payload)}
+        except Exception:
+            logger.exception("send_message: error building message payload")
+            raise
+        try:
+            try:
+                current_conn_keys = list(getattr(manager, "_connections", {}).keys())
+            except Exception:
+                current_conn_keys = []
+            logger.debug("send_message: awaiting broadcast of %s to %s (manager connections: %s)", payload_event.get("type"), member_user_ids, current_conn_keys)
+            # Await the broadcast for reliability in local/testing environments.
+            await manager.broadcast_to_users(member_user_ids, payload_event, exclude_user_ids={current_user.id})
+            logger.debug("send_message: manager.broadcast_to_users() completed")
+        except Exception:
+            logger.exception("send_message: broadcast failed")
+    except Exception:
+        import logging as _logging
+        _logging.getLogger("app.routers.messages").exception("send_message: outer broadcast block exception")
+
+    return to_message_response(message_obj)

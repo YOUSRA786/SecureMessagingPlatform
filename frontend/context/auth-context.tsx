@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { connect as wsConnect, disconnect as wsDisconnect } from "@/lib/ws-client";
 import { ApiError, authApi, type AuthResponse, type User } from "@/lib/api";
 import { clearStoredToken, getStoredToken, storeToken } from "@/lib/auth-storage";
 
@@ -56,6 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearStoredToken();
     setUser(null);
     setToken(null);
+    // close websocket connection
+    try {
+      wsDisconnect();
+    } catch (e) {
+      // ignore
+    }
     if (activeToken) {
       try {
         await authApi.logout(activeToken);
@@ -63,6 +70,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!(error instanceof ApiError && error.status === 401)) throw error;
       }
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      try {
+        wsConnect(token);
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      wsDisconnect();
+    }
+    return () => {
+      wsDisconnect();
+    };
   }, [token]);
 
   const value = useMemo(() => ({ user, token, isLoading, login, register, logout }), [user, token, isLoading, login, register, logout]);
