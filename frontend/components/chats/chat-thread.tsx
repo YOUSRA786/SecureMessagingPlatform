@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 
 import GroupDetails from "./group-details";
+import { isUserOnline } from "@/lib/presence";
 import { useAuth } from "@/context/auth-context";
 
 /* =========================================================
@@ -880,55 +881,17 @@ export function ChatThread({
           }}
         >
           <div className="avatar-wrapper">
-            <div
-              className="avatar"
-              style={
-                isGroup
-                  ? {
-                      width: 54,
-                      height: 54,
-                      borderRadius:
-                        "50%",
-                      background:
-                        "#d0e3cf",
-                      color:
-                        "#12751a",
-                      display: "flex",
-                      alignItems:
-                        "center",
-                      justifyContent:
-                        "center",
-                    }
-                  : undefined
-              }
-            >
-              {isGroup ? (
-                <GroupIcon />
-              ) : (
-                title
-                  .slice(0, 1)
-                  .toUpperCase()
-              )}
+            <div className={`avatar ${isGroup ? "group-avatar" : ""}`}>
+              {isGroup ? <GroupIcon /> : title.slice(0, 1).toUpperCase()}
             </div>
-
-            {!isGroup &&
-              otherUser?.is_online && (
-                <div className="online-dot" />
-              )}
           </div>
 
           <div className="chat-header-title">
             <h3>{title}</h3>
 
-            <span className="chat-header-sub">
-              {isGroup
-                ? `${conversation.members.length} members`
-                : otherUser?.is_online
-                ? "Online"
-                : otherUser?.last_seen_at
-                ? "Last seen recently"
-                : "Signal User"}
-            </span>
+            {isGroup && (
+              <span className="chat-header-sub">{`${conversation.members.length} members`}</span>
+            )}
           </div>
         </div>
 
@@ -1063,13 +1026,11 @@ export function ChatThread({
 
     </div>
 
-    <div className="group-created-info">
+    <div className="group-created">
 
-      <div className="group-created-date">
-        Today
-      </div>
+      <div className="group-created-date">Today</div>
 
-      <div className="group-created-event">
+      <div className="group-created-message">
         <GroupIcon />
         <span>You created the group.</span>
       </div>

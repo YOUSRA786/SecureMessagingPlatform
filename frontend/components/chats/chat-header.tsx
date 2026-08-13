@@ -1,6 +1,7 @@
 "use client";
 
 import { type Conversation, type User } from "@/lib/api";
+import { isUserOnline } from "@/lib/presence";
 
 interface ChatHeaderProps {
   conversation: Conversation;
@@ -24,24 +25,18 @@ export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
   const otherUser = getOtherMember(conversation, currentUserId);
   const isGroup = conversation.conversation_type === "group";
 
+  const online = isUserOnline(otherUser?.is_online);
   return (
     <div className="chat-header">
       <div className="chat-header-info">
-        <div className="avatar-wrapper">
-          <div className="avatar">{title.slice(0, 1).toUpperCase()}</div>
-          {!isGroup && otherUser?.is_online && <div className="online-dot" />}
-        </div>
+          <div className="avatar-wrapper">
+            <div className={`avatar ${conversation.conversation_type === 'group' ? 'group-avatar' : ''}`}>{title.slice(0, 1).toUpperCase()}</div>
+          </div>
         <div className="chat-header-title">
           <h3>{title}</h3>
-          <span className="chat-header-sub">
-            {isGroup
-              ? `${conversation.members.length} members`
-              : otherUser?.is_online
-              ? "Online"
-              : otherUser?.last_seen_at
-              ? "Last seen recently"
-              : "Signal User"}
-          </span>
+          {isGroup && (
+            <span className="chat-header-sub">{`${conversation.members.length} members`}</span>
+          )}
         </div>
       </div>
 

@@ -15,6 +15,7 @@ import { subscribe, sendEvent } from "@/lib/ws-client";
 import { NavRail, type NavTab } from "./nav-rail";
 import { ChatThread } from "./chat-thread";
 import { CallsView } from "./calls-view";
+import { isUserOnline } from "@/lib/presence";
 
 import { SettingsView } from "@/components/settings/settings-view";
 import { NewChatModal } from "./new-chat-modal";
@@ -49,6 +50,8 @@ export function ChatsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<number, number[]>>({});
+  const [isRailOpen, setIsRailOpen] = useState(true);
+  
 
   // Fetch Conversations
   const loadConversations = useCallback(
@@ -57,7 +60,46 @@ export function ChatsView() {
       if (isInitial) setIsLoadingConversations(true);
       try {
         const list = await conversationsApi.list(token);
-        setConversations(list);
+        
+        // Merge polling result with existing in-memory presence to avoid overwriting
+        // a more recent presence update (which may include a last_seen_at timestamp).
+        setConversations((prev) => {
+          try {
+            const prevByUser = new Map<number, any>();
+            for (const c of prev) {
+              for (const m of c.members) {
+                prevByUser.set(m.user.id, m.user);
+              }
+            }
+
+            const merged = list.map((c: any) => ({
+              ...c,
+              members: c.members.map((m: any) => {
+                const prevUser = prevByUser.get(m.user.id);
+                if (!prevUser) return m;
+                try {
+                  const prevTs = prevUser.last_seen_at ? new Date(prevUser.last_seen_at).getTime() : null;
+                  const apiTs = m.user.last_seen_at ? new Date(m.user.last_seen_at).getTime() : null;
+                  // If prev has a newer timestamp, prefer prev's presence fields
+                  if (prevTs && apiTs) {
+                    if (prevTs > apiTs) {
+                      return { ...m, user: { ...m.user, is_online: prevUser.is_online, last_seen_at: prevUser.last_seen_at } };
+                    }
+                  } else if (prevTs && !apiTs) {
+                    // Prev has a timestamp (offline) while API does not; prefer prev
+                    return { ...m, user: { ...m.user, is_online: prevUser.is_online, last_seen_at: prevUser.last_seen_at } };
+                  }
+                } catch (e) {
+                  // ignore and fall back to API value
+                }
+                return m;
+              }),
+            }));
+            return merged;
+          } catch (e) {
+            return list;
+          }
+        });
         if (isInitial && list.length > 0 && selectedId === null) {
           setSelectedId(list[0].id);
         }
@@ -183,10 +225,15 @@ export function ChatsView() {
       // presence
       if (type === "presence.update") {
         const uid = data?.user_id as number;
-        const isOnline = !!data?.is_online;
+        const isOnline =
+          data?.is_online === true ||
+          data?.is_online === 1 ||
+          data?.is_online === "true" ||
+          data?.is_online === "1";
+        const last_seen_at = data?.last_seen_at ?? null;
         setConversations((prev) => prev.map((c) => ({
           ...c,
-          members: c.members.map((m) => (m.user.id === uid ? { ...m, user: { ...m.user, is_online: isOnline, last_seen_at: data?.last_seen_at ?? m.user.last_seen_at } } : m)),
+          members: c.members.map((m) => (m.user.id === uid ? { ...m, user: { ...m.user, is_online: isOnline, last_seen_at: last_seen_at ?? m.user.last_seen_at } } : m)),
         })));
       }
 
@@ -258,14 +305,32 @@ export function ChatsView() {
   const activeConversation = conversations.find((c) => c.id === selectedId);
 
   return (
-    <div className={`app-container ${selectedId !== null ? "chat-active" : ""}`}>
+    <div className={`app-container ${selectedId !== null ? "chat-active" : ""} ${!isRailOpen ? "rail-collapsed" : ""}`}>
       {/* 1. Left Vertical Navigation Rail */}
-      <NavRail
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        unreadCount={totalUnread}
-        onLogout={() => void logout()}
-      />
+      {isRailOpen ? (
+        <NavRail
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          unreadCount={totalUnread}
+          onLogout={() => void logout()}
+          onToggleRail={() => setIsRailOpen(false)}
+        />
+      ) : null}
+
+      {/* Global restore button shown when rail is collapsed. Visible on all tabs. */}
+      {!isRailOpen && (
+        <button
+          className="rail-global-show"
+          aria-label="Show navigation"
+          onClick={() => setIsRailOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      )}
 
       {/* 2. Main Tab Router (Chats, Calls, Settings) */}
       {activeTab === "calls" && <CallsView />}
@@ -338,21 +403,23 @@ export function ChatsView() {
         <div style={{ display: "flex", width: "100%", height: "100%" }}>
           {/* Conversation Sidebar Pane */}
           <div className="sidebar-pane">
-            <div className="sidebar-header">
-              <h2>Chats</h2>
-              <div className="sidebar-actions">
-                <button
-                  className="icon-btn"
-                  title="New Conversation"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </button>
+              <div className="sidebar-header">
+                {/* global restore button handles rail show; do not render per-page button here */}
+
+                <h2>Chats</h2>
+                <div className="sidebar-actions">
+                  <button
+                    className="icon-btn"
+                    title="New Conversation"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
 
             {/* Search Input */}
             <div className="search-container">
@@ -392,9 +459,9 @@ export function ChatsView() {
                         className={`conversation-item ${isSelected ? "active" : ""}`}
                         onClick={() => setSelectedId(conv.id)}
                       >
-                        <div className="avatar-wrapper">
-                          <div className="avatar">{name.slice(0, 1).toUpperCase()}</div>
-                        </div>
+                            <div className="avatar-wrapper">
+                              <div className="avatar">{name.slice(0, 1).toUpperCase()}</div>
+                            </div>
 
                         <div className="conversation-info">
                           <div className="conversation-top">

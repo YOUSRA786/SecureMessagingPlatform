@@ -1,6 +1,7 @@
 "use client";
 
 import { type Conversation, type User } from "@/lib/api";
+import { isUserOnline } from "@/lib/presence";
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
@@ -100,7 +101,7 @@ export function ConversationSidebar({
               const name = getConversationDisplayName(conv, currentUserId);
               const time = formatConversationTime(conv.latest_message_at);
               const otherMember = conv.members.find((m) => m.user.id !== currentUserId)?.user;
-              const isOnline = conv.conversation_type === "direct" && otherMember?.is_online;
+              const isOnline = conv.conversation_type === "direct" && (otherMember ? isUserOnline(otherMember.is_online) : false);
 
               return (
                 <button
@@ -108,10 +109,9 @@ export function ConversationSidebar({
                   className={`conversation-item ${isSelected ? "active" : ""}`}
                   onClick={() => onSelectConversation(conv.id)}
                 >
-                  <div className="avatar-wrapper">
-                    <div className="avatar">{name.slice(0, 1).toUpperCase()}</div>
-                    {isOnline && <div className="online-dot" />}
-                  </div>
+                    <div className="avatar-wrapper">
+                      <div className="avatar">{name.slice(0, 1).toUpperCase()}</div>
+                    </div>
 
                   <div className="conversation-info">
                     <div className="conversation-top">
@@ -122,6 +122,7 @@ export function ConversationSidebar({
                       <span className="conversation-preview">
                         {conv.last_message_preview ?? "No messages yet"}
                       </span>
+                      {/* show online dot for direct chats only */}
                       {conv.unread_count > 0 && (
                         <span className="unread-badge">{conv.unread_count}</span>
                       )}

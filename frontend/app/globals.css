@@ -102,12 +102,12 @@ select {
    ========================================================= */
 
 .nav-rail {
-  width: 60px;
-  min-width: 60px;
+  width: 48px;
+  min-width: 48px;
   height: 100vh;
   padding: 12px 0 10px;
   background: var(--bg-rail);
-  border-right: 1px solid #e7e7e9;
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -124,38 +124,68 @@ select {
 }
 
 .rail-top {
-  gap: 7px;
+  gap: 10px;
 }
 
 .rail-bottom {
   margin-top: auto;
-  gap: 7px;
+  gap: 10px;
 }
 
 .rail-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 0;
-  border-radius: 11px;
+  border-radius: 10px;
   background: transparent;
-  color: #74747a;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
 }
 
 .rail-btn:hover {
-  background: #f3f3f4;
-  color: #45454a;
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+/* Custom tooltip/pill that appears on hover to the right of the rail
+   Uses `data-label` on the button to avoid the native browser tooltip */
+.rail-btn[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 62px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  z-index: 30;
+}
+
+.rail-btn:hover::after,
+.rail-btn:focus::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 .rail-btn.active {
-  background: var(--brand-light);
-  color: var(--brand);
+  background: var(--brand);
+  color: var(--bubble-outgoing-text);
+  transform: translateY(0);
 }
 
 .rail-btn svg {
@@ -170,13 +200,100 @@ select {
 
 .rail-badge {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 6px;
+  right: 6px;
   width: 8px;
   height: 8px;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-app);
   border-radius: 50%;
   background: var(--brand);
+}
+
+/* top hamburger inside rail */
+.rail-toggle-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.rail-toggle {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* small show button when rail is hidden */
+.rail-show-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-right: 10px;
+}
+
+.sidebar-header .rail-show-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Global restore button shown when the nav rail is collapsed. Visible across all tabs. */
+.rail-global-show {
+  position: fixed;
+  left: 14px;
+  top: 12px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-rail);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.rail-global-show svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* When the rail is collapsed, push the sidebar header content right
+   so the global restore button doesn't overlap the title. */
+.rail-collapsed .sidebar-header,
+.rail-collapsed .stories-sidebar-header,
+.rail-collapsed .settings-sidebar-top {
+  padding-left: 56px;
+}
+
+/* Also nudge the sidebar search and list so they align visually when collapsed */
+.rail-collapsed .search-container,
+.rail-collapsed .conversation-list,
+.rail-collapsed .stories-search,
+.rail-collapsed .settings-sidebar {
+  padding-left: 16px;
+}
+
+/* Ensure the settings title is not overlapped */
+.rail-collapsed .settings-title {
+  margin-left: 8px;
 }
 
 /* =========================================================
@@ -184,11 +301,12 @@ select {
    ========================================================= */
 
 .sidebar-pane {
-  width: 320px;
-  min-width: 320px;
+  /* slightly wider sidebar to match Signal proportions */
+  width: 360px;
+  min-width: 360px;
   height: 100vh;
   background: var(--bg-sidebar);
-  border-right: 1px solid #e4e4e6;
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -224,7 +342,7 @@ select {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #707077;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,8 +350,8 @@ select {
 }
 
 .icon-btn:hover {
-  background: #f3f3f4;
-  color: #39393e;
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .icon-btn svg {
@@ -254,21 +372,21 @@ select {
   padding: 0 12px;
   border: 0;
   border-radius: 9px;
-  background: #f1f1f2;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .search-box:focus-within {
-  background: #eeeeef;
+  background: var(--bg-hover);
   box-shadow: none;
 }
 
 .search-box svg {
   width: 16px;
   height: 16px;
-  color: #8a8a90;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -284,7 +402,7 @@ select {
 }
 
 .search-box input::placeholder {
-  color: #929297;
+  color: var(--text-muted);
 }
 
 /* =========================================================
@@ -315,11 +433,11 @@ select {
 }
 
 .conversation-item:hover {
-  background: #f5f5f6;
+  background: var(--bg-hover);
 }
 
 .conversation-item.active {
-  background: #f0f0f1;
+  background: var(--bg-active);
 }
 
 .avatar-wrapper {
@@ -331,8 +449,8 @@ select {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: #e7e8ed;
-  color: #686b73;
+  background: var(--bg-card);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,6 +458,16 @@ select {
   font-weight: 500;
   user-select: none;
   text-transform: uppercase;
+}
+
+.avatar.group-avatar {
+  /* slightly larger, dark green avatar used for group headers */
+  width: 54px;
+  height: 54px;
+  background: #12751a;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .avatar.md {
@@ -354,16 +482,7 @@ select {
   font-size: 29px;
 }
 
-.online-dot {
-  position: absolute;
-  width: 11px;
-  height: 11px;
-  bottom: 0;
-  right: 0;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: var(--presence-online);
-}
+/* presence dot removed from UI per design decision */
 
 .conversation-info {
   flex: 1;
@@ -386,7 +505,7 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #303035;
+  color: var(--text-main);
   font-size: 14px;
   line-height: 18px;
   font-weight: 600;
@@ -395,7 +514,7 @@ select {
 .conversation-time {
   flex-shrink: 0;
   margin-left: 8px;
-  color: #88888e;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -405,7 +524,7 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #818188;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 17px;
 }
@@ -449,7 +568,7 @@ select {
   min-height: 72px;
   padding: 0 20px;
   background: var(--bg-main);
-  border-bottom: 1px solid #e5e5e7;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -475,7 +594,7 @@ select {
 
 .chat-header-title h3 {
   margin: 0;
-  color: #2d2e32;
+  color: var(--text-main);
   font-size: 15px;
   line-height: 20px;
   font-weight: 600;
@@ -483,7 +602,7 @@ select {
 
 .chat-header-sub {
   margin-top: 1px;
-  color: #88888e;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -514,8 +633,8 @@ select {
   max-width: 500px;
   padding: 8px 15px;
   border-radius: 9px;
-  background: #f6f6f7;
-  color: #88888e;
+  background: var(--bg-card);
+  color: var(--text-muted);
   font-size: 11px;
   line-height: 1.45;
   display: flex;
@@ -541,8 +660,8 @@ select {
 .date-divider span {
   padding: 4px 10px;
   border-radius: 8px;
-  background: #f3f3f4;
-  color: #85858b;
+  background: var(--bg-hover);
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -552,8 +671,9 @@ select {
 .message-row {
   display: flex;
   flex-direction: column;
-  max-width: min(60%, 600px);
-  margin: 2px 0;
+  /* restrict message width for better readability */
+  max-width: min(66%, 820px);
+  margin: 4px 0;
 }
 
 .message-row.incoming {
@@ -573,8 +693,8 @@ select {
 
 .message-bubble {
   position: relative;
-  padding: 7px 11px;
-  border-radius: 14px;
+  padding: 8px 12px;
+  border-radius: 18px;
   font-size: 13px;
   line-height: 1.4;
   word-break: break-word;
@@ -584,13 +704,13 @@ select {
 .message-row.incoming .message-bubble {
   background: var(--bubble-incoming);
   color: var(--bubble-incoming-text);
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: 6px;
 }
 
 .message-row.outgoing .message-bubble {
   background: var(--bubble-outgoing);
   color: var(--bubble-outgoing-text);
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 6px;
 }
 
 .message-footer {
@@ -657,40 +777,44 @@ select {
 .group-intro-card {
   position: relative;
 
-  width: 300px;
-  height: 165px;
+  /* compact card to match Signal desktop reference */
+  width: 260px;
+  height: 140px;
 
   box-sizing: border-box;
 
-  border: 1px solid #dedede;
+  border: 1px solid var(--border-color);
   border-radius: 18px;
 
-  background: #ffffff;
+  background: var(--bg-card);
 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
 
-  padding-top: 78px;
+  /* leave room for overlapping avatar */
+  padding-top: 62px;
 
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 .group-intro-avatar {
   position: absolute;
 
-  top: -34px;
+  /* larger circle overlapping the top of the card */
+  top: -44px;
   left: 50%;
 
   transform: translateX(-50%);
 
-  width: 68px;
-  height: 68px;
+  width: 90px;
+  height: 90px;
 
   border-radius: 50%;
 
-  background: #e8f1e9;
-  color: #6d8e73;
+  /* dark green group color to match reference */
+  background: #12751a;
+  color: #ffffff;
 
   display: flex;
   align-items: center;
@@ -698,40 +822,44 @@ select {
 }
 
 .group-intro-avatar svg {
-  width: 42px;
-  height: 42px;
-}
-
-.group-intro-avatar svg {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
 }
 
 .group-intro-card strong {
-  color: #303035;
-  font-size: 15px;
+  color: var(--text-main);
+  font-size: 16px;
   line-height: 20px;
-  font-weight: 600;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.group-intro-members {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .group-intro-card span {
-  margin-top: 4px;
-  color: #85858b;
-  font-size: 11px;
+  margin-top: 0;
 }
 
 .group-created {
-  margin-top: 30px;
-  color: #85858b;
+  margin-top: 14px;
+  color: var(--text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 6px;
 }
 
 .group-created-date {
-  margin-bottom: 18px;
   color: #85858b;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .group-created-message {
@@ -743,8 +871,8 @@ select {
 }
 
 .group-created-message svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: #85858b;
 }
 
@@ -753,39 +881,39 @@ select {
    ========================================================= */
 
 .composer-container {
-  padding: 10px 18px 13px;
+  padding: 12px 20px 16px;
   background: var(--bg-main);
 }
 
 .composer-box {
-  min-height: 46px;
-  padding: 5px 8px 5px 12px;
-  border: 1px solid #dedee2;
-  border-radius: 24px;
-  background: #f8f8f9;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  background: var(--bg-card);
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 }
 
 .composer-box:focus-within {
-  border-color: #d8d7df;
-  background: #f8f8f9;
+  border-color: var(--border-color);
+  background: var(--bg-card);
   box-shadow: none;
 }
 
 .composer-input {
   flex: 1;
   min-width: 0;
-  min-height: 28px;
-  max-height: 120px;
-  padding: 4px 0;
+  min-height: 32px;
+  max-height: 140px;
+  padding: 6px 0;
   border: 0;
   outline: none;
   resize: none;
   background: transparent;
-  color: #303035;
-  font-size: 13px;
+  color: var(--text-main);
+  font-size: 14px;
   line-height: 1.4;
 }
 
@@ -834,8 +962,8 @@ select {
 .empty-chat-state {
   height: 100%;
   padding: 32px;
-  background: #fff;
-  color: #85858b;
+  background: var(--bg-main);
+  color: var(--text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -848,7 +976,7 @@ select {
   height: 68px;
   margin-bottom: 18px;
   border-radius: 50%;
-  background: #f0efff;
+  background: var(--brand-light);
   color: var(--brand);
   display: flex;
   align-items: center;
@@ -884,7 +1012,7 @@ select {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-app);
 }
 
 .stories-app {
@@ -898,8 +1026,8 @@ select {
   width: 320px;
   min-width: 320px;
   height: 100%;
-  border-right: 1px solid #e5e5e7;
-  background: #fff;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
 }
@@ -914,7 +1042,7 @@ select {
 
 .stories-sidebar-header h2 {
   margin: 0;
-  color: #303035;
+  color: var(--text-main);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.4px;
@@ -926,13 +1054,13 @@ select {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #66666c;
+  color: var(--text-muted);
   font-size: 27px;
   cursor: pointer;
 }
 
 .stories-add-btn:hover {
-  background: #f3f3f4;
+  background: var(--bg-hover);
 }
 
 .stories-search {
@@ -940,7 +1068,7 @@ select {
   margin: 0 14px 12px;
   padding: 0 12px;
   border-radius: 9px;
-  background: #f1f1f2;
+  background: var(--bg-card);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -949,7 +1077,7 @@ select {
 .stories-search svg {
   width: 16px;
   height: 16px;
-  color: #89898f;
+  color: var(--text-muted);
 }
 
 .stories-search input {
@@ -971,12 +1099,12 @@ select {
 }
 
 .my-story:hover {
-  background: #f5f5f6;
+  background: var(--bg-hover);
 }
 
 .my-story strong {
   display: block;
-  color: #303035;
+  color: var(--text-main);
   font-size: 14px;
   font-weight: 600;
 }
@@ -984,7 +1112,7 @@ select {
 .my-story span {
   display: block;
   margin-top: 4px;
-  color: #85858b;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -992,7 +1120,7 @@ select {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: #ecebff;
+  background: var(--bg-card);
   color: var(--brand);
   display: flex;
   align-items: center;
@@ -1012,13 +1140,13 @@ select {
 
 .no-stories strong {
   margin-bottom: 8px;
-  color: #424247;
+  color: var(--text-main);
   font-size: 16px;
   font-weight: 600;
 }
 
 .no-stories span {
-  color: #88888e;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -1028,13 +1156,13 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--bg-main);
 }
 
 .stories-coming-soon {
   max-width: 430px;
   padding: 40px;
-  color: #4b4b50;
+  color: var(--text-main);
   text-align: center;
 }
 
@@ -1042,9 +1170,9 @@ select {
   width: 62px;
   height: 62px;
   margin: 0 auto 18px;
-  border: 1.5px solid #aaaab0;
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
-  color: #88888e;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1053,19 +1181,19 @@ select {
 
 .stories-coming-soon h2 {
   margin: 0 0 8px;
-  color: #414147;
+  color: var(--text-main);
   font-size: 18px;
   font-weight: 600;
 }
 
 .stories-coming-soon p {
   margin: 0 0 7px;
-  color: #626269;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .stories-coming-soon span {
-  color: #929298;
+  color: var(--text-muted);
   font-size: 12.5px;
   line-height: 1.5;
 }
@@ -1284,7 +1412,7 @@ select {
   height: 300px;
   margin-top: 28px;
   border-radius: 12px;
-  background: #303236;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1391,16 +1519,16 @@ select {
   display: flex;
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: var(--bg-main);
 }
 
 .settings-sidebar {
   width: 300px;
   min-width: 300px;
   height: 100%;
-  padding: 18px 10px;
-  background: #fff;
-  border-right: 1px solid #e5e5e7;
+  padding: 12px 12px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1410,55 +1538,149 @@ select {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px;
+  padding: 10px 8px;
   border: 0;
   border-radius: 9px;
-  background: #f5f5f6;
+  background: transparent;
   cursor: pointer;
 }
 
 .settings-profile-info strong {
   display: block;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .settings-profile-info small {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .settings-menu-item {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 12px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #45454a;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
 }
 
 .settings-menu-item:hover {
-  background: #f4f4f5;
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .settings-menu-item.active {
   background: var(--brand-light);
-  color: #5d55c6;
+  color: var(--brand);
   font-weight: 600;
 }
 
 .settings-menu-item svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: var(--text-muted);
 }
+
+.settings-sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.hamburger-btn {
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.settings-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+/* Light-theme: give the settings/profile avatar a subtle lavender circular background
+   while preserving dark-theme appearance exactly. Scope to settings to avoid
+   affecting avatars elsewhere. */
+:root:not([data-theme="dark"]) .settings-view .avatar {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.settings-profile-card {
+  background: transparent;
+}
+
+.settings-profile-info strong {
+  font-size: 15px;
+}
+
+.settings-profile-info small {
+  font-size: 13px;
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+
+.appearance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 8px;
+  gap: 12px;
+  cursor: default;
+}
+
+.appearance-row[role="button"] { cursor: pointer; }
+
+.row-left { display:flex; align-items:center; gap:12px; }
+.row-icon { width:20px; height:20px; color:var(--text-muted); }
+.row-label { font-size:15px; color:var(--text-main); }
+.row-right { display:flex; align-items:center; gap:10px; color:var(--text-muted); }
+.color-indicator { width:18px; height:18px; border-radius:9px; border:2px solid var(--bg-app); box-shadow:0 0 0 2px rgba(0,0,0,0.04); }
+.chevron { color:var(--text-muted); }
+
+.form-input { padding:6px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); font-size:14px; }
+
+.chat-color-page { padding-top:8px; }
+.chat-color-header { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.chat-color-previews { display:flex; gap:18px; align-items:flex-end; margin-bottom:22px; }
+.preview-incoming { background:var(--bubble-incoming); color:var(--bubble-incoming-text); padding:12px 14px; border-radius:12px; max-width:320px; position:relative; }
+.preview-outgoing { padding:12px 14px; border-radius:12px; color:var(--bubble-outgoing-text); max-width:320px; margin-left:auto; position:relative; }
+.preview-text { font-size:14px; }
+.preview-time { font-size:12px; color:var(--text-muted); margin-top:6px; }
+.preview-time.outgoing-time { color: var(--bubble-outgoing-time); }
+
+.palette-grid { display:grid; grid-template-columns: repeat(8, 36px); gap:14px 18px; align-items:center; margin-bottom:22px; }
+.swatch { width:36px; height:36px; border-radius:18px; border:0; box-shadow: 0 1px 2px rgba(0,0,0,0.06); cursor:pointer; }
+.swatch.selected { box-shadow: 0 0 0 3px rgba(0,0,0,0.06), 0 0 0 6px rgba(255,255,255,0.8) inset; position:relative; }
+.swatch.add-swatch { display:flex; align-items:center; justify-content:center; font-size:18px; background:#f4f4f5; color:var(--text-muted); }
+
+.chat-color-footer { margin-top:8px; }
 
 .settings-content {
   flex: 1;
@@ -1548,17 +1770,89 @@ select {
 .form-input {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #dedee1;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   outline: none;
-  background: #f7f7f8;
+  background: var(--bg-card);
   color: var(--text-main);
   font-size: 14px;
 }
 
 .form-input:focus {
-  border-color: #b7b3e8;
+  border-color: var(--brand);
   box-shadow: 0 0 0 3px var(--brand-light);
+}
+
+/* Settings-specific form control overrides (use variables so dark mode applies) */
+.settings-view input,
+.settings-view textarea,
+.settings-view .form-input,
+.settings-view select {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.settings-view input::placeholder,
+.settings-view .form-input::placeholder,
+.settings-view textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-view select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 36px;
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+}
+
+.settings-view select option {
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+/* Custom dropdown arrow (dark-friendly) */
+.settings-view select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Checkboxes/radios accent color */
+.settings-view input[type="checkbox"],
+.settings-view input[type="radio"] {
+  accent-color: var(--brand);
+}
+
+/* Ensure labels and helper text are readable */
+.settings-view .settings-group-header,
+.settings-view .setting-label strong,
+.settings-view .settings-section-title,
+.settings-view .row-label {
+  color: var(--text-main);
+}
+
+.settings-view .setting-label span,
+.settings-view .settings-group-header + .setting-item span,
+.settings-view .settings-profile-info small {
+  color: var(--text-muted);
+}
+
+/* Buttons inside settings */
+.settings-view button,
+.settings-view .button,
+.settings-view .button-secondary,
+.settings-view .primary-btn {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.settings-view button:hover,
+.settings-view .button:hover,
+.settings-view .primary-btn:hover {
+  background: var(--bg-hover);
 }
 
 .auth-page {
