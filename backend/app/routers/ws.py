@@ -65,7 +65,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 broadcast_last_seen = None
 
         # broadcast presence update to all currently connected users (use captured primitives)
-        connected_user_ids = set(getattr(manager, "_connections", {}).keys())
+        connected_user_ids = await manager.connected_user_ids()
         if connected_user_ids and 'broadcast_user_id' in locals():
             await manager.broadcast_to_users(connected_user_ids, {"type": "presence.update", "data": {"user_id": broadcast_user_id, "is_online": True, "last_seen_at": broadcast_last_seen}})
 
@@ -162,8 +162,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             # disconnect
             await manager.disconnect(websocket, user_id)
             # if user has no remaining connections, mark offline
-            remaining = getattr(manager, "_connections", {}).get(user_id)
-            if not remaining:
+            if not await manager.has_connections(user_id):
                 with SessionLocal.begin() as session:
                     user = session.get(User, user_id)
                     if user:
