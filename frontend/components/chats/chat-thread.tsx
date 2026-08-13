@@ -199,7 +199,7 @@ function getAttachmentUrl(url: string): string {
 
   const apiUrl =
     process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:8000";
+    "https://securemessagingplatform.onrender.com/";
 
   return `${apiUrl}${
     url.startsWith("/") ? url : `/${url}`
@@ -486,7 +486,7 @@ export function ChatThread({
                   const apiUrl =
                     process.env
                       .NEXT_PUBLIC_API_URL ??
-                    "http://localhost:8000";
+                    "https://securemessagingplatform.onrender.com/";
 
                   xhr.open(
                     "POST",
@@ -663,7 +663,7 @@ export function ChatThread({
                 const apiUrl =
                   process.env
                     .NEXT_PUBLIC_API_URL ??
-                  "http://localhost:8000";
+                  "https://securemessagingplatform.onrender.com/";
 
                 const response =
                   await fetch(

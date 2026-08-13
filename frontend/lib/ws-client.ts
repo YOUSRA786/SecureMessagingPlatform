@@ -16,7 +16,7 @@ function notifySubscribers(event: any) {
 }
 
 function buildWsUrl() {
-  const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const api = process.env.NEXT_PUBLIC_API_URL ?? "https://securemessagingplatform.onrender.com/";
   // convert http://host:port to ws://host:port
   return api.replace(/^http/, "ws") + "/ws";
 }
