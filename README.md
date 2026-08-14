@@ -123,10 +123,10 @@ The Next.js app runs on `http://localhost:3000` by default. To point the fronten
 ### Demo Login
 
 Username:
-`demo_user123`
+`yousra`
 
 Password:
-`123456789`
+`demo-password`
 
 These credentials are provided for demonstration/testing purposes only.
 
