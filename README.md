@@ -1,5 +1,10 @@
 # Signal Clone
 
+## NOTE:-
+
+The submitted url is changed.
+The correct url of deployment is -> https://secure-messaging-platform-t3ku-sigma.vercel.app
+
 ## Overview
 
 Signal Clone is a Signal-inspired messaging application implemented as a full-stack example project. It provides a React/Next.js frontend and a FastAPI backend to demonstrate user authentication, one-to-one and group conversations, real-time messaging, presence updates, and UI features such as stories, calls, and settings with a light/dark theme.
@@ -121,7 +126,7 @@ Username:
 `demo_user123`
 
 Password:
-`password123`
+`123456789`
 
 These credentials are provided for demonstration/testing purposes only.
 
