@@ -199,7 +199,7 @@ function getAttachmentUrl(url: string): string {
 
   const apiUrl =
     process.env.NEXT_PUBLIC_API_URL ??
-    "https://securemessagingplatform.onrender.com/";
+    "https://securemessagingplatform.onrender.com";
 
   return `${apiUrl}${
     url.startsWith("/") ? url : `/${url}`
